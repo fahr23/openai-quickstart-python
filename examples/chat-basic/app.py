@@ -10,10 +10,14 @@ import openai
 
 client = openai.OpenAI()
 
+
 app = Flask(__name__)
 
 chat_history = [
-    {"role": "system", "content": "You are a helpful assistant."},
+   {
+    "role": "system",
+    "content": "You are an expert software architect and software engineering guru. You possess extensive knowledge in financial theories, technical analysis, and fundamental analysis. You are a highly knowledgeable and helpful assistant, ready to provide detailed and accurate information."
+}
 ]
 
 
@@ -35,7 +39,7 @@ def stream():
         assistant_response_content = ""
 
         with client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=chat_history,
             stream=True,
         ) as stream:
