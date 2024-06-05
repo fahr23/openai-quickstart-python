@@ -1,21 +1,23 @@
 <!doctype html>
 <html>
   <head>
-    <title>OpenAI Chat</title>
+    <title>OpenAI Local API Chat</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}" />
   </head>
   <body>
     <div class="header">
-      <img src="{{ url_for('static', filename='icon.png') }}" alt="OpenAI Logo" />
-      <div class="demo-text">Demo</div>
+      <div class="demo-text">Open AI Api</div>
     </div>
     <div class="chat-container">
       {% for message in chat_history %}
       <div class="message-role {{ 'user' if message.role == 'user' else '' }}">
         {{ message.role.capitalize() }}
       </div>
-      <div class="{{ 'user-message' if message.role == 'user' else 'assistant-message' }}">
-        {{ message.content }}
+      <div class="message-wrapper {{ 'user-message' if message.role == 'user' else 'assistant-message' }}">
+        <div class="message-content">{{ message.content }}</div>
+        {% if message.role != 'user' %}
+        <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
@@ -28,6 +30,16 @@
       </form>
     </div>
     <script>
+      function copyToClipboard(button) {
+        const messageContent = button.previousElementSibling.textContent;
+        navigator.clipboard.writeText(messageContent).then(() => {
+          button.textContent = 'Copied';
+          setTimeout(() => {
+            button.textContent = 'Copy';
+          }, 2000);
+        });
+      }
+
       document.querySelector("form").addEventListener("submit", function (event) {
         event.preventDefault();
         const messageInput = document.querySelector('textarea[name="message"]');
@@ -43,8 +55,9 @@
           chatContainer.appendChild(roleDiv);
 
           const userMessageDiv = document.createElement("div");
+          userMessageDiv.classList.add("message-wrapper");
           userMessageDiv.classList.add("user-message");
-          userMessageDiv.textContent = message;
+          userMessageDiv.innerHTML = `<div class="message-content">${message}</div>`;
           chatContainer.appendChild(userMessageDiv);
         }
 
@@ -68,21 +81,25 @@
 
               // Prepare the assistant's message container
               const assistantMessageDiv = document.createElement("div");
+              assistantMessageDiv.classList.add("message-wrapper");
               assistantMessageDiv.classList.add("assistant-message");
+              assistantMessageDiv.innerHTML = '<div class="message-content"></div><button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>';
               chatContainer.appendChild(assistantMessageDiv);
+
+              const messageContentDiv = assistantMessageDiv.querySelector('.message-content');
 
               // Open a connection to receive streamed responses
               const eventSource = new EventSource("/stream");
               eventSource.onmessage = function (event) {
-                const currentText = assistantMessageDiv.textContent;
+                const currentText = messageContentDiv.textContent;
                 const newText = event.data;
                 const lastChar = currentText.slice(-1);
 
                 // Check if we need to add a space (streamed chunks might be missing it)
                 if (/[.,!?]/.test(lastChar) && newText.charAt(0) !== " ") {
-                  assistantMessageDiv.textContent += " " + newText;
+                  messageContentDiv.textContent += " " + newText;
                 } else {
-                  assistantMessageDiv.textContent += newText;
+                  messageContentDiv.textContent += newText;
                 }
 
                 // Scroll to the bottom of the chat container
